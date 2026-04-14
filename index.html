@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tetys — Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0d0f13;
+      color: #dcddde;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #111318;
+      border-bottom: 1px solid #1e2128;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .header-brand { display: flex; align-items: center; gap: 10px; padding: 16px 0; }
+    header h1 { font-size: 20px; font-weight: 700; color: #fff; }
+
+    nav { display: flex; gap: 4px; }
+    .tab-btn {
+      background: none; border: none; color: #72767d; font-size: 14px;
+      font-weight: 600; padding: 20px 16px; cursor: pointer;
+      border-bottom: 2px solid transparent; transition: color .15s, border-color .15s;
+    }
+    .tab-btn:hover { color: #dcddde; }
+    .tab-btn.active { color: #fff; border-bottom-color: #5865f2; }
+
+    .container {
+      flex: 1; max-width: 1300px; width: 100%;
+      margin: 32px auto; padding: 0 24px; gap: 32px;
+    }
+    .panel { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+    .card {
+      background: #111318; border: 1px solid #1e2128;
+      border-radius: 12px; padding: 20px;
+    }
+    .card h2 {
+      font-size: 13px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .08em; color: #72767d; margin-bottom: 14px;
+    }
+
+    label { display: block; font-size: 12px; font-weight: 600; color: #b9bbbe; margin-bottom: 6px; margin-top: 12px; }
+    label:first-of-type { margin-top: 0; }
+
+    input[type="text"], input[type="url"], textarea, select {
+      width: 100%; background: #0d0f13; border: 1px solid #2c2f36;
+      border-radius: 6px; color: #dcddde; font-size: 14px;
+      padding: 8px 12px; outline: none; transition: border-color .15s;
+    }
+    input[type="text"]:focus, input[type="url"]:focus,
+    textarea:focus, select:focus { border-color: #5865f2; }
+    textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+
+    .color-row { display: flex; align-items: center; gap: 10px; }
+    .color-row input[type="color"] {
+      width: 44px; height: 36px; border: 1px solid #2c2f36;
+      border-radius: 6px; background: none; padding: 2px; cursor: pointer;
+    }
+    .color-hex { flex: 1; }
+
+    .field-item { background: #0d0f13; border: 1px solid #1e2128; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+    .field-item .field-row { display: flex; gap: 10px; }
+    .field-item .field-row > div { flex: 1; }
+    .field-inline { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; color: #b9bbbe; }
+    .field-inline input[type="checkbox"] { accent-color: #5865f2; }
+    .remove-field { background: #2c2f36; border: none; color: #ed4245; border-radius: 4px; cursor: pointer; padding: 4px 8px; font-size: 12px; float: right; }
+    .remove-field:hover { background: #ed4245; color: #fff; }
+
+    .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: opacity .15s, transform .1s; }
+    .btn:active { transform: scale(.97); }
+    .btn-secondary { background: #2c2f36; color: #dcddde; width: 100%; margin-top: 4px; }
+    .btn-secondary:hover { background: #36393f; }
+    .btn-primary { background: #5865f2; color: #fff; width: 100%; margin-top: 8px; padding: 12px; }
+    .btn-primary:hover { opacity: .88; }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-booster { background: #FF73FA; color: #fff; width: 100%; margin-top: 8px; padding: 12px; }
+    .btn-booster:hover { opacity: .88; }
+    .btn-booster:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-danger { background: #ed4245; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 13px; font-weight: 600; }
+    .btn-danger:hover { opacity: .85; }
+
+    #toast {
+      display: none; position: fixed; bottom: 24px; right: 24px;
+      background: #23a559; color: #fff; padding: 12px 20px;
+      border-radius: 8px; font-weight: 600; font-size: 14px; z-index: 999;
+      animation: fadeIn .2s ease;
+    }
+    #toast.error { background: #ed4245; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    /* Embed preview */
+    .preview-wrapper { flex: 0 0 440px; display: flex; flex-direction: column; gap: 20px; }
+    .discord-preview { background: #36393f; border-radius: 12px; padding: 20px; min-height: 200px; }
+    .embed-preview { border-left: 4px solid #5865f2; background: #2f3136; border-radius: 0 6px 6px 0; padding: 12px 14px; max-width: 400px; }
+    .embed-author { font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #dcddde; }
+    .embed-title { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .embed-description { font-size: 13px; color: #b9bbbe; line-height: 1.5; white-space: pre-wrap; margin-bottom: 8px; }
+    .embed-fields { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+    .embed-field { min-width: 100px; }
+    .embed-field.inline { flex: 1; }
+    .embed-field-name { font-size: 12px; font-weight: 700; color: #dcddde; margin-bottom: 2px; }
+    .embed-field-value { font-size: 13px; color: #b9bbbe; }
+    .embed-image img { max-width: 100%; border-radius: 4px; margin-top: 8px; }
+    .embed-thumbnail { float: right; margin-left: 12px; }
+    .embed-thumbnail img { width: 70px; height: 70px; border-radius: 4px; object-fit: cover; }
+    .embed-footer { font-size: 11px; color: #72767d; margin-top: 8px; }
+    .embed-timestamp { font-size: 11px; color: #72767d; }
+    .empty-state { color: #72767d; font-size: 13px; text-align: center; margin-top: 30px; }
+
+    /* Booster preview */
+    .booster-preview-card { background: #2f3136; border-radius: 8px; padding: 16px; border-left: 4px solid #FF73FA; }
+    .booster-preview-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .booster-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #FF73FA, #b44be1); }
+    .booster-author-name { font-size: 14px; font-weight: 700; color: #fff; }
+    .booster-desc { font-size: 13px; color: #b9bbbe; margin-bottom: 12px; }
+    .booster-field-name { font-size: 12px; font-weight: 700; color: #dcddde; margin: 8px 0 4px; }
+    .booster-field-value { font-size: 13px; color: #b9bbbe; line-height: 1.6; }
+    .booster-footer { font-size: 11px; color: #72767d; margin-top: 12px; border-top: 1px solid #3e4147; padding-top: 8px; }
+    .member-id-hint { font-size: 11px; color: #72767d; margin-top: 4px; }
+
+    /* Activity Log */
+    .activity-page { flex: 1; display: flex; flex-direction: column; max-width: 1300px; width: 100%; margin: 32px auto; padding: 0 24px; gap: 20px; }
+    .activity-header { display: flex; align-items: center; justify-content: space-between; }
+    .activity-header h2 { font-size: 16px; font-weight: 700; color: #fff; }
+    .activity-meta { font-size: 12px; color: #72767d; }
+    .live-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #23a559; margin-right: 5px; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    .log-table { width: 100%; border-collapse: collapse; }
+    .log-table th {
+      text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .06em; color: #72767d; padding: 10px 14px;
+      border-bottom: 1px solid #1e2128; background: #0d0f13;
+    }
+    .log-table td { padding: 12px 14px; border-bottom: 1px solid #1a1d24; font-size: 13px; vertical-align: middle; }
+    .log-table tr:hover td { background: #13151b; }
+
+    .log-user { display: flex; align-items: center; gap: 10px; }
+    .log-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .log-avatar-placeholder { width: 32px; height: 32px; border-radius: 50%; background: #36393f; flex-shrink: 0; }
+    .log-name { font-weight: 600; color: #fff; font-size: 13px; }
+    .log-tag { font-size: 11px; color: #72767d; }
+
+    .log-cmd { font-family: 'Consolas', monospace; background: #1e2128; color: #7289da; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+    .log-args { color: #b9bbbe; font-size: 12px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .log-channel { color: #72767d; font-size: 12px; }
+    .log-time { color: #72767d; font-size: 11px; white-space: nowrap; }
+
+    .log-empty { text-align: center; color: #72767d; padding: 60px 0; font-size: 14px; }
+
+    .filters { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .filters input[type="text"] { max-width: 240px; padding: 7px 12px; font-size: 13px; }
+    .filter-count { font-size: 12px; color: #72767d; margin-left: auto; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand"><h1>Tetys</h1></div>
+  <nav>
+    <button class="tab-btn active" onclick="switchTab('embed-creator')">✏️ Embed Creator</button>
+    <button class="tab-btn" onclick="switchTab('booster-embed')">🚀 Booster Embed</button>
+    <button class="tab-btn" onclick="switchTab('activity')">📋 Activity Log</button>
+  </nav>
+</header>
+
+<!-- ═══════════════════ TAB 1: Embed Creator ════════════════════════════════ -->
+<div id="tab-embed-creator" class="container" style="display:flex">
+  <div class="panel">
+    <div class="card">
+      <h2>Destination</h2>
+      <label>Channel</label>
+      <select id="channel"><option value="">Loading channels…</option></select>
+    </div>
+    <div class="card">
+      <h2>Embed Content</h2>
+      <label>Author</label>
+      <input type="text" id="author" placeholder="Author name (optional)">
+      <label>Title</label>
+      <input type="text" id="title" placeholder="Embed title">
+      <label>Description</label>
+      <textarea id="description" placeholder="Embed description…"></textarea>
+      <label>Color</label>
+      <div class="color-row">
+        <input type="color" id="colorPicker" value="#5865F2">
+        <input type="text" id="colorHex" class="color-hex" value="#5865F2" maxlength="7" placeholder="#5865F2">
+      </div>
+    </div>
+    <div class="card">
+      <h2>Images</h2>
+      <label>Thumbnail URL</label>
+      <input type="url" id="thumbnail_url" placeholder="https://…">
+      <label>Image URL</label>
+      <input type="url" id="image_url" placeholder="https://…">
+    </div>
+    <div class="card">
+      <h2>Fields</h2>
+      <div id="fields-container"></div>
+      <button class="btn btn-secondary" onclick="addField()">+ Add Field</button>
+    </div>
+    <div class="card">
+      <h2>Footer</h2>
+      <label>Footer Text</label>
+      <input type="text" id="footer" placeholder="Footer text (optional)">
+    </div>
+    <button class="btn btn-primary" id="sendBtn" onclick="sendEmbed()">Send Embed</button>
+  </div>
+  <div class="preview-wrapper">
+    <div class="card"><h2>Live Preview</h2></div>
+    <div class="discord-preview">
+      <div id="preview-area"><p class="empty-state">Fill in the form to preview your embed.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ TAB 2: Booster Embed ════════════════════════════════ -->
+<div id="tab-booster-embed" class="container" style="display:none">
+  <div class="panel">
+    <div class="card">
+      <h2>Booster Embed Otomatis</h2>
+      <p style="font-size:13px;color:#72767d;margin-bottom:14px;">Kirim embed booster secara manual ke channel tertentu untuk member yang baru boost.</p>
+      <label>Channel Tujuan</label>
+      <select id="b-channel"><option value="">Loading channels…</option></select>
+      <label>Member ID</label>
+      <input type="text" id="b-member-id" placeholder="Masukkan Discord User ID..." oninput="updateBoosterPreview()">
+      <p class="member-id-hint">Klik kanan member di Discord → Copy User ID</p>
+    </div>
+    <button class="btn btn-booster" id="boosterSendBtn" onclick="sendBoosterEmbed()">🚀 Kirim Booster Embed</button>
+  </div>
+  <div class="preview-wrapper">
+    <div class="card"><h2>Preview Embed</h2></div>
+    <div class="discord-preview">
+      <div class="booster-preview-card">
+        <div class="booster-preview-header">
+          <div class="booster-avatar"></div>
+          <div><div class="booster-author-name">New Server Boost!</div></div>
+        </div>
+        <div class="booster-desc">🚀 <strong id="bp-mention">@member</strong> just boosted the server!<br>Thank you for your support!</div>
+        <div class="booster-field-name">ℹ️ INFO</div>
+        <div class="booster-field-value">
+          &gt; <strong>1 Boost = 1 Slot</strong><br>
+          @Warna Solid = <strong>1 Slot</strong><br>
+          @Warna Gradasi = <strong>2 Slot</strong><br>
+          @Warna Holografik = <strong>3 Slot</strong><br>
+          &gt; Warna Holografik tidak bisa diubah (aturan Discord).
+        </div>
+        <div class="booster-field-name">📋 PERINTAH UTAMA</div>
+        <div class="booster-field-value">
+          <code>/cusrole create</code> → Buat custom role<br>
+          <code>/cusrole edit</code> → Edit nama/warna/ikon/style<br>
+          <code>/cusrole transfer</code> → Pinjamkan role ke user lain<br>
+          <code>/cusrole reclaim</code> → Ambil kembali role<br>
+          <code>/cusrole list</code> → Lihat daftar role<br>
+          <code>/cusrole info</code> → Lihat info role<br>
+          &gt; User penerima transfer bisa edit role via <code>/cusrole edit</code>.
+        </div>
+        <div class="booster-field-name">🗑️ HAPUS ROLE</div>
+        <div class="booster-field-value">
+          <code>/cusrole refund</code> → Hapus role, slot kembali<br>
+          <code>/cusrole delete</code> → Hapus permanen, slot hangus
+        </div>
+        <div class="booster-footer">Tetys System • Booster Perks</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ TAB 3: Activity Log ═════════════════════════════════ -->
+<div id="tab-activity" class="activity-page" style="display:none">
+
+  <div class="activity-header">
+    <div>
+      <h2><span class="live-dot"></span>Activity Log</h2>
+      <p class="activity-meta" id="log-meta">Memuat log…</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn-danger" onclick="clearLog()">🗑️ Clear Log</button>
+    </div>
+  </div>
+
+  <div class="card" style="padding:14px 20px">
+    <div class="filters">
+      <input type="text" id="log-search" placeholder="🔍 Cari user atau command…" oninput="renderLog()" style="max-width:260px;padding:7px 12px;font-size:13px;">
+      <select id="log-cmd-filter" onchange="renderLog()" style="max-width:200px;padding:7px 12px;font-size:13px;">
+        <option value="">Semua Command</option>
+      </select>
+      <span class="filter-count" id="filter-count"></span>
+    </div>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <div id="log-body" style="overflow-x:auto">
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Command</th>
+            <th>Args</th>
+            <th>Channel</th>
+            <th>Waktu</th>
+          </tr>
+        </thead>
+        <tbody id="log-rows">
+          <tr><td colspan="5" class="log-empty">Belum ada aktivitas. Gunakan command di Discord untuk melihat log.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const fields = [];
+  let allLogs = [];
+  let logPollInterval = null;
+
+  const tabs = ['embed-creator', 'booster-embed', 'activity'];
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', tabs[i] === tab);
+    });
+    document.getElementById('tab-embed-creator').style.display = tab === 'embed-creator' ? 'flex' : 'none';
+    document.getElementById('tab-booster-embed').style.display = tab === 'booster-embed' ? 'flex' : 'none';
+    document.getElementById('tab-activity').style.display = tab === 'activity' ? 'flex' : 'none';
+
+    if (tab === 'activity') {
+      fetchLog();
+      if (!logPollInterval) logPollInterval = setInterval(fetchLog, 5000);
+    } else {
+      clearInterval(logPollInterval);
+      logPollInterval = null;
+    }
+  }
+
+  async function loadChannels() {
+    try {
+      const res = await fetch('/channels');
+      const data = await res.json();
+      const opts = '<option value="">Select a channel…</option>' +
+        data.map(c => `<option value="${c.id}">#${c.name}</option>`).join('');
+      document.getElementById('channel').innerHTML = opts;
+      document.getElementById('b-channel').innerHTML = opts;
+    } catch {
+      document.getElementById('channel').innerHTML = '<option value="">Failed to load channels</option>';
+      document.getElementById('b-channel').innerHTML = '<option value="">Failed to load channels</option>';
+    }
+  }
+
+  async function fetchLog() {
+    try {
+      const res = await fetch('/activity');
+      allLogs = await res.json();
+      updateCmdFilter();
+      renderLog();
+      const meta = document.getElementById('log-meta');
+      meta.textContent = `${allLogs.length} entri • diperbarui ${new Date().toLocaleTimeString()}`;
+    } catch {
+      document.getElementById('log-meta').textContent = 'Gagal memuat log.';
+    }
+  }
+
+  function updateCmdFilter() {
+    const sel = document.getElementById('log-cmd-filter');
+    const current = sel.value;
+    const cmds = [...new Set(allLogs.map(l => l.command))].sort();
+    sel.innerHTML = '<option value="">Semua Command</option>' +
+      cmds.map(c => `<option value="${c}" ${c === current ? 'selected' : ''}>${c}</option>`).join('');
+  }
+
+  function renderLog() {
+    const search = document.getElementById('log-search').value.toLowerCase();
+    const cmdFilter = document.getElementById('log-cmd-filter').value;
+
+    const filtered = allLogs.filter(l => {
+      const matchCmd = !cmdFilter || l.command === cmdFilter;
+      const matchSearch = !search ||
+        l.user_name.toLowerCase().includes(search) ||
+        l.user_tag.toLowerCase().includes(search) ||
+        l.command.toLowerCase().includes(search) ||
+        (l.args || '').toLowerCase().includes(search);
+      return matchCmd && matchSearch;
+    });
+
+    document.getElementById('filter-count').textContent =
+      filtered.length !== allLogs.length
+        ? `Menampilkan ${filtered.length} dari ${allLogs.length}`
+        : `${allLogs.length} entri`;
+
+    const tbody = document.getElementById('log-rows');
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="log-empty">Tidak ada hasil yang cocok.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(l => {
+      const t = new Date(l.timestamp);
+      const timeStr = t.toLocaleString('id-ID', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+      const avatarHtml = l.user_avatar
+        ? `<img class="log-avatar" src="${esc(l.user_avatar)}" onerror="this.style.display='none'">`
+        : `<div class="log-avatar-placeholder"></div>`;
+      return `<tr>
+        <td>
+          <div class="log-user">
+            ${avatarHtml}
+            <div>
+              <div class="log-name">${esc(l.user_name)}</div>
+              <div class="log-tag">${esc(l.user_tag)}</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="log-cmd">${esc(l.command)}</span></td>
+        <td><span class="log-args" title="${esc(l.args || '')}">${esc(l.args || '—')}</span></td>
+        <td><span class="log-channel">${esc(l.channel)}</span></td>
+        <td><span class="log-time">${timeStr}</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function clearLog() {
+    if (!confirm('Hapus semua log aktivitas?')) return;
+    await fetch('/activity/clear', { method: 'POST' });
+    allLogs = [];
+    renderLog();
+    document.getElementById('log-meta').textContent = '0 entri • log dibersihkan';
+    showToast('✅ Log dibersihkan.');
+  }
+
+  document.getElementById('colorPicker').addEventListener('input', e => {
+    document.getElementById('colorHex').value = e.target.value.toUpperCase();
+    updatePreview();
+  });
+  document.getElementById('colorHex').addEventListener('input', e => {
+    if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) document.getElementById('colorPicker').value = e.target.value;
+    updatePreview();
+  });
+  ['author','title','description','colorHex','thumbnail_url','image_url','footer'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updatePreview);
+  });
+
+  function addField() {
+    const idx = fields.length;
+    fields.push({ name: '', value: '', inline: false });
+    const div = document.createElement('div');
+    div.className = 'field-item'; div.id = `field-${idx}`;
+    div.innerHTML = `
+      <button class="remove-field" onclick="removeField(${idx})">Remove</button>
+      <div class="field-row">
+        <div><label>Name</label><input type="text" placeholder="Field name" oninput="updateField(${idx},'name',this.value)"></div>
+        <div><label>Value</label><input type="text" placeholder="Field value" oninput="updateField(${idx},'value',this.value)"></div>
+      </div>
+      <div class="field-inline"><input type="checkbox" onchange="updateField(${idx},'inline',this.checked)"><span>Inline</span></div>`;
+    document.getElementById('fields-container').appendChild(div);
+    updatePreview();
+  }
+  function removeField(idx) { fields[idx] = null; document.getElementById(`field-${idx}`)?.remove(); updatePreview(); }
+  function updateField(idx, key, val) { if (fields[idx]) fields[idx][key] = val; updatePreview(); }
+
+  function updatePreview() {
+    const title = document.getElementById('title').value;
+    const description = document.getElementById('description').value;
+    const author = document.getElementById('author').value;
+    const footer = document.getElementById('footer').value;
+    const imageUrl = document.getElementById('image_url').value;
+    const thumbnailUrl = document.getElementById('thumbnail_url').value;
+    const color = document.getElementById('colorHex').value || '#5865F2';
+    const activeFields = fields.filter(Boolean).filter(f => f.name || f.value);
+
+    if (!title && !description && !author && !footer && !imageUrl && !thumbnailUrl && !activeFields.length) {
+      document.getElementById('preview-area').innerHTML = '<p class="empty-state">Fill in the form to preview your embed.</p>';
+      return;
+    }
+    let fieldsHtml = '';
+    if (activeFields.length) {
+      fieldsHtml = '<div class="embed-fields">' +
+        activeFields.map(f => `<div class="embed-field${f.inline?' inline':''}"><div class="embed-field-name">${esc(f.name)}</div><div class="embed-field-value">${esc(f.value)}</div></div>`).join('') + '</div>';
+    }
+    const thumbHtml = thumbnailUrl ? `<div class="embed-thumbnail"><img src="${thumbnailUrl}" onerror="this.style.display='none'"></div>` : '';
+    const imageHtml = imageUrl ? `<div class="embed-image"><img src="${imageUrl}" onerror="this.style.display='none'"></div>` : '';
+    const now = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+    document.getElementById('preview-area').innerHTML = `
+      <div class="embed-preview" style="border-left-color:${color}">
+        ${thumbHtml}
+        ${author ? `<div class="embed-author">${esc(author)}</div>` : ''}
+        ${title ? `<div class="embed-title">${esc(title)}</div>` : ''}
+        ${description ? `<div class="embed-description">${esc(description)}</div>` : ''}
+        ${fieldsHtml}${imageHtml}
+        ${footer ? `<div class="embed-footer">${esc(footer)} • <span class="embed-timestamp">${now}</span></div>` : `<div class="embed-timestamp">${now}</div>`}
+      </div>`;
+  }
+
+  function updateBoosterPreview() {
+    const id = document.getElementById('b-member-id').value.trim();
+    document.getElementById('bp-mention').textContent = id ? `@user_${id.slice(-4)}` : '@member';
+  }
+
+  function esc(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  async function sendEmbed() {
+    const channelId = document.getElementById('channel').value;
+    if (!channelId) { showToast('Please select a channel.', true); return; }
+    const btn = document.getElementById('sendBtn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    const payload = {
+      channel_id: channelId,
+      title: document.getElementById('title').value,
+      description: document.getElementById('description').value,
+      author: document.getElementById('author').value,
+      color: document.getElementById('colorHex').value.replace('#',''),
+      footer: document.getElementById('footer').value,
+      image_url: document.getElementById('image_url').value,
+      thumbnail_url: document.getElementById('thumbnail_url').value,
+      fields: fields.filter(Boolean).filter(f => f.name && f.value)
+    };
+    try {
+      const res = await fetch('/send_embed', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      const data = await res.json();
+      showToast(data.success ? '✅ Embed sent!' : (data.error || 'Failed.'), !data.success);
+    } catch { showToast('Network error.', true); }
+    btn.disabled = false; btn.textContent = 'Send Embed';
+  }
+
+  async function sendBoosterEmbed() {
+    const channelId = document.getElementById('b-channel').value;
+    const memberId = document.getElementById('b-member-id').value.trim();
+    if (!channelId) { showToast('Pilih channel terlebih dahulu.', true); return; }
+    if (!memberId) { showToast('Masukkan Member ID terlebih dahulu.', true); return; }
+    const btn = document.getElementById('boosterSendBtn');
+    btn.disabled = true; btn.textContent = 'Mengirim…';
+    try {
+      const res = await fetch('/send_booster_embed', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ channel_id: channelId, member_id: memberId }) });
+      const data = await res.json();
+      showToast(data.success ? `✅ Booster embed dikirim untuk ${data.member_name}!` : (data.error || 'Gagal mengirim.'), !data.success);
+    } catch { showToast('Network error.', true); }
+    btn.disabled = false; btn.textContent = '🚀 Kirim Booster Embed';
+  }
+
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = isError ? 'error' : '';
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 3500);
+  }
+
+  loadChannels();
+  setInterval(loadChannels, 30000);
+</script>
+</body>
+</html>
